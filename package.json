@@ -1,0 +1,32 @@
+{
+  "name": "dunning-kruger-monitor",
+  "version": "1.0.0",
+  "description": "Determine your Dunning Kruger score on a given topic.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdiPat/dunning-kruger-monitor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AdiPat/dunning-kruger-monitor/issues"
+  },
+  "homepage": "https://github.com/AdiPat/dunning-kruger-monitor#readme",
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitest/coverage-v8": "^3.1.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  }
+}
