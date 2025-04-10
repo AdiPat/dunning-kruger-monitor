@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateDunningKrugerScore } from "./index";
+import { calculateDunningKrugerScore } from "../index";
 
 describe("calculateDunningKrugerScore", () => {
   it("should return a valid score object", () => {
