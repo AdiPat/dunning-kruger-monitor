@@ -2,15 +2,28 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { startChat } from "../chat";
 import inquirer from "inquirer";
 import ora from "ora";
+import chalk from "chalk";
 
 // Mock dependencies
 vi.mock("inquirer");
+
+const mockSpinner = {
+  start: vi.fn().mockReturnThis(),
+  succeed: vi.fn().mockReturnThis(),
+  stop: vi.fn().mockReturnThis(),
+};
+
 vi.mock("ora", () => ({
-  default: vi.fn(() => ({
-    start: vi.fn().mockReturnThis(),
-    succeed: vi.fn().mockReturnThis(),
-    stop: vi.fn().mockReturnThis(),
-  })),
+  default: vi.fn(() => mockSpinner),
+}));
+
+// Mock chalk to return the input string
+vi.mock("chalk", () => ({
+  default: {
+    cyan: (text: string) => text,
+    green: (text: string) => text,
+    bold: (text: string) => text,
+  },
 }));
 
 describe("startChat", () => {
@@ -20,37 +33,98 @@ describe("startChat", () => {
     console.log = vi.fn();
   });
 
-  it("should start and complete a chat session", async () => {
-    // Mock user input to exit after one assessment
-    vi.mocked(inquirer.prompt)
-      .mockResolvedValueOnce({ confidence: 80 })
-      .mockResolvedValueOnce({ continueChat: false });
+  it("should start and display welcome messages", async () => {
+    // Mock user choosing to exit immediately
+    vi.mocked(inquirer.prompt).mockResolvedValueOnce({
+      message: "q",
+    });
 
     await startChat("JavaScript");
 
-    // Verify that ora spinner was created
-    expect(ora).toHaveBeenCalledWith(expect.any(Object));
-
-    // Verify that user was prompted
-    expect(inquirer.prompt).toHaveBeenCalledTimes(2);
-
-    // Verify that results were displayed
+    // Verify welcome messages
     expect(console.log).toHaveBeenCalledWith(
-      expect.stringContaining("Assessment Results")
+      expect.stringContaining(
+        "Welcome to your Dunning-Kruger assessment session!"
+      )
+    );
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining("Let's evaluate your knowledge about: JavaScript")
     );
   });
 
-  it("should continue chat loop when user chooses to continue", async () => {
-    // Mock user choosing to continue once then exit
-    vi.mocked(inquirer.prompt)
-      .mockResolvedValueOnce({ confidence: 70 })
-      .mockResolvedValueOnce({ continueChat: true })
-      .mockResolvedValueOnce({ confidence: 60 })
-      .mockResolvedValueOnce({ continueChat: false });
+  it("should show loading spinners with appropriate messages", async () => {
+    // Mock user choosing to exit immediately
+    vi.mocked(inquirer.prompt).mockResolvedValueOnce({
+      message: "q",
+    });
 
     await startChat("Python");
 
-    // Verify that user was prompted multiple times
-    expect(inquirer.prompt).toHaveBeenCalledTimes(4);
+    // Verify spinner creation and messages
+    expect(ora).toHaveBeenCalledWith({
+      text: "Preparing your assessment...",
+      color: "cyan",
+    });
+    expect(ora().succeed).toHaveBeenCalledWith("Assessment ready!");
+  });
+
+  it("should handle user input and show thinking spinner", async () => {
+    // Mock user input then exit
+    vi.mocked(inquirer.prompt)
+      .mockResolvedValueOnce({ message: "Hello" })
+      .mockResolvedValueOnce({ message: "q" });
+
+    await startChat("JavaScript");
+
+    // Verify thinking spinner
+    expect(ora).toHaveBeenCalledWith({
+      text: "Thinking...",
+      color: "yellow",
+    });
+    expect(ora().succeed).toHaveBeenCalledWith(
+      "Okay, I'm ready with my response now."
+    );
+  });
+
+  it("should exit on 'q' command", async () => {
+    vi.mocked(inquirer.prompt).mockResolvedValueOnce({
+      message: "q",
+    });
+
+    await startChat("Python");
+
+    expect(console.log).toHaveBeenCalledWith("Goodbye!");
+  });
+
+  it("should exit on 'quit' command", async () => {
+    vi.mocked(inquirer.prompt).mockResolvedValueOnce({
+      message: "quit",
+    });
+
+    await startChat("Python");
+
+    expect(console.log).toHaveBeenCalledWith("Goodbye!");
+  });
+
+  it("should exit on 'exit' command", async () => {
+    vi.mocked(inquirer.prompt).mockResolvedValueOnce({
+      message: "exit",
+    });
+
+    await startChat("Python");
+
+    expect(console.log).toHaveBeenCalledWith("Goodbye!");
+  });
+
+  it("should continue chat loop until exit command", async () => {
+    vi.mocked(inquirer.prompt)
+      .mockResolvedValueOnce({ message: "Hello" })
+      .mockResolvedValueOnce({ message: "How are you?" })
+      .mockResolvedValueOnce({ message: "q" });
+
+    await startChat("JavaScript");
+
+    // Verify prompt was called multiple times
+    expect(inquirer.prompt).toHaveBeenCalledTimes(3);
   });
 });
