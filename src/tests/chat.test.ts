@@ -3,9 +3,13 @@ import { startChat } from "../chat";
 import inquirer from "inquirer";
 import ora from "ora";
 import chalk from "chalk";
+import { generateText } from "ai";
+import { groq } from "@ai-sdk/groq";
 
 // Mock dependencies
 vi.mock("inquirer");
+vi.mock("ai");
+vi.mock("@ai-sdk/groq");
 
 const mockSpinner = {
   start: vi.fn().mockReturnThis(),
@@ -31,6 +35,14 @@ describe("startChat", () => {
     vi.clearAllMocks();
     // Mock console methods
     console.log = vi.fn();
+    // Mock generateText to return a response
+    vi.mocked(generateText).mockResolvedValue({
+      text: "Mock AI response",
+    } as any);
+    // Mock groq to return model name
+    vi.mocked(groq).mockReturnValue(
+      "meta-llama/llama-4-scout-17b-16e-instruct" as any
+    );
   });
 
   it("should start and display welcome messages", async () => {
@@ -81,9 +93,7 @@ describe("startChat", () => {
       text: "Thinking...",
       color: "yellow",
     });
-    expect(ora().succeed).toHaveBeenCalledWith(
-      "Okay, I'm ready with my response now."
-    );
+    expect(ora().succeed).toHaveBeenCalledWith("Mock AI response");
   });
 
   it("should exit on 'q' command", async () => {
