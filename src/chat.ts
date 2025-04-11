@@ -1,6 +1,8 @@
 import inquirer from "inquirer";
 import chalk from "chalk";
 import ora from "ora";
+import { groq } from "@ai-sdk/groq";
+import { generateText } from "ai";
 
 interface ChatResponses {
   message: string;
@@ -26,11 +28,13 @@ export async function startChat(topic: string): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 1500));
   spinner.succeed("Assessment ready!");
 
+  const chatHistory = [currentSystemMessage];
+
   while (true) {
     const { message } = await inquirer.prompt<ChatResponses>({
       type: "input",
       name: "message",
-      message: currentSystemMessage,
+      message: "Your message:",
     });
 
     const loadingSpinner = ora({
@@ -38,9 +42,22 @@ export async function startChat(topic: string): Promise<void> {
       color: "yellow",
     }).start();
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const { text: agentMessage } = await generateText({
+      model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
+      system: `You are a conversational agent responsible for assessing the user's knowledge about a specific topic. The topic is ${topic}.
 
-    loadingSpinner.succeed("Okay, I'm ready with my response now.");
+        Chat History:
+        ${chatHistory.join("\n")}
+        User: ${message}
+      `,
+      prompt:
+        "Respond to the last message from the user, maintaining continuity in the conversation. Your response should be concise and relevant to the topic.",
+    });
+
+    chatHistory.push(`User: '''${message}'''`);
+    chatHistory.push(`Agent: '''${agentMessage}'''`);
+
+    loadingSpinner.succeed(agentMessage);
 
     if (
       message.toLowerCase() === "exit" ||
