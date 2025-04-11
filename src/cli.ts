@@ -39,11 +39,20 @@ async function ensureConfigExists(): Promise<boolean> {
         CONFIG_FILE,
         JSON.stringify({ groqApiKey: apiKey }, null, 2)
       );
+      process.env.GROQ_API_KEY = apiKey;
       return true;
     }
 
-    console.log(chalk.green("✓ GROQ LLM configured!"));
-    return true;
+    // Load existing configuration
+    const config = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8"));
+    if (config.groqApiKey) {
+      process.env.GROQ_API_KEY = config.groqApiKey;
+      console.log(chalk.green("✓ GROQ LLM configured!"));
+      return true;
+    }
+
+    console.error(chalk.red("Invalid configuration: GROQ API key not found"));
+    return false;
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error(
