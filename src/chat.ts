@@ -1,10 +1,9 @@
 import inquirer from "inquirer";
 import chalk from "chalk";
 import ora from "ora";
-import { calculateDunningKrugerScore } from "./index.js";
 
 interface ChatResponses {
-  confidence: number;
+  message: string;
   continueChat: boolean;
 }
 
@@ -21,58 +20,34 @@ export async function startChat(topic: string): Promise<void> {
     color: "cyan",
   }).start();
 
+  let currentSystemMessage =
+    "Hello! I am your Dunning-Kruger Monitor. Are you ready to assess your knowledge?";
+
   await new Promise((resolve) => setTimeout(resolve, 1500));
   spinner.succeed("Assessment ready!");
 
   while (true) {
-    const { confidence } = await inquirer.prompt<ChatResponses>({
-      type: "number",
-      name: "confidence",
-      message:
-        "On a scale of 0-100, how confident are you about your knowledge in this topic?",
-      validate: (input: number | undefined) => {
-        if (input === undefined || isNaN(input) || input < 0 || input > 100) {
-          return "Please enter a number between 0 and 100";
-        }
-        return true;
-      },
+    const { message } = await inquirer.prompt<ChatResponses>({
+      type: "input",
+      name: "message",
+      message: currentSystemMessage,
     });
 
     const loadingSpinner = ora({
-      text: "Analyzing your response...",
+      text: "Thinking...",
       color: "yellow",
     }).start();
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const expertise = Math.floor(Math.random() * 101);
-    const score = calculateDunningKrugerScore(topic, confidence, expertise);
+    loadingSpinner.succeed("Okay, I'm ready with my response now.");
 
-    loadingSpinner.succeed("Analysis complete!");
-
-    console.log("\n" + chalk.yellow("=== Assessment Results ==="));
-    console.log(chalk.blue(`Topic: ${score.topic}`));
-    console.log(chalk.green(`Your Confidence: ${score.confidence}%`));
-    console.log(chalk.red(`Actual Expertise: ${score.expertise}%`));
-
-    const gap = Math.abs(score.confidence - score.expertise);
-    if (gap > 30) {
-      console.log(
-        chalk.yellow("\n⚠️ Potential Dunning-Kruger effect detected!")
-      );
-    }
-
-    const { continueChat } = await inquirer.prompt<ChatResponses>({
-      type: "confirm",
-      name: "continueChat",
-      message: "Would you like to reassess your confidence?",
-      default: false,
-    });
-
-    if (!continueChat) {
-      console.log(
-        chalk.cyan("\n👋 Thank you for using the Dunning-Kruger Monitor!")
-      );
+    if (
+      message.toLowerCase() === "exit" ||
+      message.toLowerCase() === "quit" ||
+      message.toLowerCase() === "q"
+    ) {
+      console.log(chalk.green("Goodbye!"));
       break;
     }
   }
