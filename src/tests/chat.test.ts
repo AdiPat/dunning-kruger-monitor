@@ -27,6 +27,10 @@ vi.mock("chalk", () => ({
     cyan: (text: string) => text,
     green: (text: string) => text,
     bold: (text: string) => text,
+    red: (text: string) => text,
+    yellow: (text: string) => text,
+    blue: (text: string) => text,
+    gray: (text: string) => text,
   },
 }));
 
@@ -104,6 +108,10 @@ describe("startChat", () => {
     await startChat("Python");
 
     expect(console.log).toHaveBeenCalledWith("Goodbye!");
+    expect(ora).toHaveBeenCalledWith({
+      text: "Saving conversation history...",
+      color: "cyan",
+    });
   });
 
   it("should exit on 'quit' command", async () => {
@@ -114,6 +122,10 @@ describe("startChat", () => {
     await startChat("Python");
 
     expect(console.log).toHaveBeenCalledWith("Goodbye!");
+    expect(ora).toHaveBeenCalledWith({
+      text: "Saving conversation history...",
+      color: "cyan",
+    });
   });
 
   it("should exit on 'exit' command", async () => {
@@ -124,6 +136,10 @@ describe("startChat", () => {
     await startChat("Python");
 
     expect(console.log).toHaveBeenCalledWith("Goodbye!");
+    expect(ora).toHaveBeenCalledWith({
+      text: "Saving conversation history...",
+      color: "cyan",
+    });
   });
 
   it("should continue chat loop until exit command", async () => {
@@ -136,5 +152,56 @@ describe("startChat", () => {
 
     // Verify prompt was called multiple times
     expect(inquirer.prompt).toHaveBeenCalledTimes(3);
+  });
+
+  describe("conversation closing", () => {
+    it("should properly clean up resources when exiting", async () => {
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({
+        message: "q",
+      });
+
+      await startChat("JavaScript");
+
+      expect(mockSpinner.stop).toHaveBeenCalled();
+      expect(ora).toHaveBeenCalledWith({
+        text: "Saving conversation history...",
+        color: "cyan",
+      });
+      expect(console.log).toHaveBeenCalledWith("Goodbye!");
+    });
+
+    it("should save conversation state before exiting", async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ message: "Hello" })
+        .mockResolvedValueOnce({ message: "q" });
+
+      await startChat("Python");
+
+      // Verify final messages
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining("Saving your progress...")
+      );
+      expect(console.log).toHaveBeenCalledWith("Goodbye!");
+      expect(mockSpinner.succeed).toHaveBeenCalledWith("Progress saved!");
+    });
+
+    it("should handle errors during cleanup gracefully", async () => {
+      // Mock spinner to throw error during cleanup
+      mockSpinner.stop.mockImplementationOnce(() => {
+        throw new Error("Cleanup error");
+      });
+
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({
+        message: "exit",
+      });
+
+      await startChat("JavaScript");
+
+      // Verify error handling
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining("Error during cleanup")
+      );
+      expect(console.log).toHaveBeenCalledWith("Goodbye!");
+    });
   });
 });
