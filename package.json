@@ -5,6 +5,12 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "bin": {
     "dunning-kruger-monitor": "./dist/cli.js"
   },
@@ -13,7 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
-    "start": "node ./dist/cli.js",
+    "start": "npm run build && node ./dist/cli.js",
     "dev": "tsx ./src/cli.ts"
   },
   "repository": {
